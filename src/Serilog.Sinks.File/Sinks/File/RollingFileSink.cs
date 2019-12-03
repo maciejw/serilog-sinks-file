@@ -35,6 +35,7 @@ namespace Serilog.Sinks.File
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
         readonly FileLifecycleHooks _hooks;
+        readonly bool _propagateExceptions;
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
@@ -51,7 +52,8 @@ namespace Serilog.Sinks.File
                               bool shared,
                               RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit,
-                              FileLifecycleHooks hooks)
+                              FileLifecycleHooks hooks,
+                              bool propagateExceptions)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.");
@@ -67,6 +69,7 @@ namespace Serilog.Sinks.File
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
             _hooks = hooks;
 
+            _propagateExceptions = propagateExceptions;
             OpenFile(Clock.DateTimeNow);
         }
 
@@ -110,9 +113,14 @@ namespace Serilog.Sinks.File
         {
             var currentCheckpoint = _roller.GetCurrentCheckpoint(now);
 
-            // We only try periodically because repeated failures
-            // to open log files REALLY slow an app down.
-            _nextCheckpoint = _roller.GetNextCheckpoint(now) ?? now.AddMinutes(30);
+            _nextCheckpoint = _roller.GetNextCheckpoint(now);
+
+            if (!_propagateExceptions)
+            {
+                // We only try periodically because repeated failures
+                // to open log files REALLY slow an app down.
+                _nextCheckpoint = _nextCheckpoint ?? now.AddMinutes(30);
+            }
 
             var existingFiles = Enumerable.Empty<string>();
             try

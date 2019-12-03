@@ -220,7 +220,23 @@ namespace Serilog.Sinks.File.Tests
         }
 
         static void TestRollingEventSequence(
-            Action<string, LoggerSinkConfiguration> configureFile,
+           Action<string, LoggerSinkConfiguration> configureFile,
+           IEnumerable<LogEvent> events,
+           Action<IList<string>> verifyWritten = null)
+        {
+            TestRollingEventSequence((pathFormat, loggerConfiguration) => configureFile(pathFormat, loggerConfiguration.WriteTo), events, verifyWritten);
+        }
+
+        static void TestRollingAuditEventSequence(
+           Action<string, LoggerAuditSinkConfiguration> configureFile,
+           IEnumerable<LogEvent> events,
+           Action<IList<string>> verifyWritten = null)
+        {
+            TestRollingEventSequence((pathFormat, loggerConfiguration) => configureFile(pathFormat, loggerConfiguration.AuditTo), events, verifyWritten);
+        }
+
+        static void TestRollingEventSequence(
+            Action<string, LoggerConfiguration> configureFile,
             IEnumerable<LogEvent> events,
             Action<IList<string>> verifyWritten = null)
         {
@@ -235,7 +251,7 @@ namespace Serilog.Sinks.File.Tests
             }
 
             var config = new LoggerConfiguration();
-            configureFile(pathFormat, config.WriteTo);
+            configureFile(pathFormat, config);
             var log = config.CreateLogger();
 
             var verified = new List<string>();
