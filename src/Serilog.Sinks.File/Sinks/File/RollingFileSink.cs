@@ -89,11 +89,7 @@ namespace Serilog.Sinks.File
 
         void AlignCurrentFileTo(DateTime now, bool nextSequence = false)
         {
-            if (!_nextCheckpoint.HasValue)
-            {
-                OpenFile(now);
-            }
-            else if (nextSequence || now >= _nextCheckpoint.Value)
+            if (nextSequence || now >= _nextCheckpoint)
             {
                 int? minSequence = null;
                 if (nextSequence)
