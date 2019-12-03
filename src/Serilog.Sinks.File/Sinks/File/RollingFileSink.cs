@@ -70,7 +70,6 @@ namespace Serilog.Sinks.File
             _hooks = hooks;
 
             _propagateExceptions = propagateExceptions;
-            OpenFile(Clock.DateTimeNow);
         }
 
         public void Emit(LogEvent logEvent)
@@ -93,7 +92,11 @@ namespace Serilog.Sinks.File
 
         void AlignCurrentFileTo(DateTime now, bool nextSequence = false)
         {
-            if (nextSequence || now >= _nextCheckpoint)
+            if (!_nextCheckpoint.HasValue)
+            {
+                OpenFile(now);
+            }
+            else if (nextSequence || now >= _nextCheckpoint)
             {
                 int? minSequence = null;
                 if (nextSequence)
