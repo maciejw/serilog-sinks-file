@@ -20,6 +20,7 @@ using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
+using static Serilog.Sinks.File.IO;
 
 namespace Serilog.Sinks.File
 {
@@ -116,9 +117,9 @@ namespace Serilog.Sinks.File
             var existingFiles = Enumerable.Empty<string>();
             try
             {
-                if (Directory.Exists(_roller.LogFileDirectory))
+                if (DirectoryExists(_roller.LogFileDirectory))
                 {
-                    existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
+                    existingFiles = DirectoryGetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
                                          .Select(Path.GetFileName);
                 }
             }
@@ -177,7 +178,7 @@ namespace Serilog.Sinks.File
 
             // We consider the current file to exist, even if nothing's been written yet,
             // because files are only opened on response to an event being processed.
-            var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
+            var potentialMatches = DirectoryGetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
                 .Select(Path.GetFileName)
                 .Union(new[] { currentFileName });
 
@@ -198,7 +199,7 @@ namespace Serilog.Sinks.File
                 try
                 {
                     _hooks?.OnFileDeleting(fullPath);
-                    System.IO.File.Delete(fullPath);
+                    FileDelete(fullPath);
                 }
                 catch (Exception ex)
                 {
