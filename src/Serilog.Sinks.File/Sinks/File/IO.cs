@@ -41,7 +41,7 @@ namespace Serilog.Sinks.File
             SetIO();
         }
 
-        static void SetIO(FileDelete fileDelete = null, DirectoryGetFiles directoryGetFiles = null, DirectoryExists directoryExists = null)
+        public static void SetIO(FileDelete fileDelete = null, DirectoryGetFiles directoryGetFiles = null, DirectoryExists directoryExists = null)
         {
             _fileDelete = fileDelete ?? System.IO.File.Delete;
             _directoryGetFiles = directoryGetFiles ?? Directory.GetFiles;
