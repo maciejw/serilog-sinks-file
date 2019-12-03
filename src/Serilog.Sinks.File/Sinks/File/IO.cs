@@ -14,6 +14,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 
 namespace Serilog.Sinks.File
 {
@@ -23,29 +24,57 @@ namespace Serilog.Sinks.File
 
     static class IO
     {
-        [ThreadStatic]
+        private static FileDelete DefaultFileDelete => System.IO.File.Delete;
+        private static DirectoryGetFiles DefaultDirectoryGetFiles => Directory.GetFiles;
+        private static DirectoryExists DefaultDirectoryExists => Directory.Exists;
+
+        [ThreadStatic] private static FileDelete _testFileDelete;
+        [ThreadStatic] private static DirectoryGetFiles _testDirectoryGetFiles;
+        [ThreadStatic] private static DirectoryExists _testDirectoryExists;
+
         private static FileDelete _fileDelete;
-        [ThreadStatic]
         private static DirectoryGetFiles _directoryGetFiles;
-        [ThreadStatic]
         private static DirectoryExists _directoryExists;
 
-        public static FileDelete FileDelete => _fileDelete;
+        public static FileDelete FileDelete { get => _fileDelete ?? _testFileDelete ?? DefaultFileDelete; }
+        public static DirectoryGetFiles DirectoryGetFiles { get => _directoryGetFiles ?? _testDirectoryGetFiles ?? DefaultDirectoryGetFiles; }
+        public static DirectoryExists DirectoryExists { get => _directoryExists ?? _testDirectoryExists ?? DefaultDirectoryExists; }
 
-        public static DirectoryGetFiles DirectoryGetFiles => _directoryGetFiles;
-
-        public static DirectoryExists DirectoryExists => _directoryExists;
 
         static IO()
         {
-            SetIO();
+            Reset();
         }
 
-        public static void SetIO(FileDelete fileDelete = null, DirectoryGetFiles directoryGetFiles = null, DirectoryExists directoryExists = null)
+        /// <summary>
+        /// Set IO operation to specific implementation
+        /// </summary>
+        /// <remarks>
+        /// Test implemetation is stored in <see cref="ThreadStaticAttribute"/> field and default implementation is set to null.
+        /// Passing null as an argument resets vlaue to defaults.
+        /// </remarks>
+        /// <param name="fileDelete"></param>
+        /// <param name="directoryGetFiles"></param>
+        /// <param name="directoryExists"></param>
+        public static void Reset(FileDelete fileDelete = null, DirectoryGetFiles directoryGetFiles = null, DirectoryExists directoryExists = null)
         {
-            _fileDelete = fileDelete ?? System.IO.File.Delete;
-            _directoryGetFiles = directoryGetFiles ?? Directory.GetFiles;
-            _directoryExists = directoryExists ?? Directory.Exists;
+            SetField(ref _fileDelete, ref _testFileDelete, fileDelete ?? DefaultFileDelete, fileDelete != null);
+            SetField(ref _directoryGetFiles, ref _testDirectoryGetFiles, directoryGetFiles ?? DefaultDirectoryGetFiles, directoryGetFiles != null);
+            SetField(ref _directoryExists, ref _testDirectoryExists, directoryExists ?? DefaultDirectoryExists, directoryExists != null);
+        }
+
+        private static void SetField<T>(ref T field, ref T testField, T value, bool setTestInplementation = false) where T : class
+        {
+            if (setTestInplementation)
+            {
+                field = null;
+                testField = value;
+            }
+            else
+            {
+                field = value;
+                testField = null;
+            }
         }
     }
 }
